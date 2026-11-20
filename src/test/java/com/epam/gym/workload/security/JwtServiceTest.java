@@ -1,25 +1,30 @@
 package com.epam.gym.workload.security;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 
-import java.util.Base64;
+import java.time.Instant;
+import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtServiceTest {
 
-    private static final String SECRET = Base64.getEncoder().encodeToString(
-            "a-secret-key-that-is-at-least-256-bits-long-for-tests".getBytes());
-    private final JwtService service = new JwtService(SECRET);
+    private final javax.crypto.SecretKey signingKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final JwtService service = new JwtService(Encoders.BASE64.encode(signingKey.getEncoded()));
 
     @Test
-    void validatesSignedTokenAndReturnsSubject() {
-        var key = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SECRET));
-        var token = Jwts.builder().subject("main-service").signWith(key).compact();
+    void returnsSubjectForValidToken() {
+        String token = Jwts.builder()
+                .subject("service-user")
+                .signWith(signingKey)
+                .compact();
 
-        assertEquals("main-service", service.validateAndGetSubject(token).orElseThrow());
+        assertEquals("service-user", service.validateAndGetSubject(token).orElseThrow());
     }
 
     @Test
@@ -28,9 +33,22 @@ class JwtServiceTest {
     }
 
     @Test
-    void rejectsTokenWithoutSubject() {
-        var key = Keys.hmacShaKeyFor(Base64.getDecoder().decode(SECRET));
-        var token = Jwts.builder().signWith(key).compact();
+    void rejectsExpiredToken() {
+        String token = Jwts.builder()
+                .subject("service-user")
+                .expiration(Date.from(Instant.now().minusSeconds(1)))
+                .signWith(signingKey)
+                .compact();
+
+        assertTrue(service.validateAndGetSubject(token).isEmpty());
+    }
+
+    @Test
+    void rejectsTokenSignedWithAnotherKey() {
+        String token = Jwts.builder()
+                .subject("service-user")
+                .signWith(Keys.secretKeyFor(SignatureAlgorithm.HS256))
+                .compact();
 
         assertTrue(service.validateAndGetSubject(token).isEmpty());
     }

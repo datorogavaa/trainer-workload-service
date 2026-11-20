@@ -11,14 +11,15 @@ import org.springframework.web.bind.annotation.*;
 /** Richardson level 2: resource-oriented URIs + proper HTTP verbs and status codes. */
 @RestController
 @RequestMapping("/api/trainers")
-public class WorkloadRestController {
+public class WorkloadController {
 
     private final WorkloadService service;
 
-    public WorkloadRestController(WorkloadService service) {
+    public WorkloadController(WorkloadService service) {
         this.service = service;
     }
 
+    /** Accepts a trainer workload change (ADD / DELETE). Returns 200 OK as per the contract. */
     @PostMapping("/workloads")
     public ResponseEntity<Void> updateWorkload(@Valid @RequestBody WorkloadRequest request) {
         service.process(request);
@@ -26,17 +27,18 @@ public class WorkloadRestController {
     }
 
     /** Hours for a trainer in a given month. */
-    @GetMapping("/workloads/{username}/months")
+    @GetMapping("/{username}/workloads/{year}/{month}")
     public MonthlyHoursResponse getMonthlyHours(@PathVariable String username,
-                                                @RequestParam int year,
-                                                @RequestParam int month) {
+                                                @PathVariable int year,
+                                                @PathVariable int month) {
         return service.getMonthlyHours(username, year, month);
     }
 
-    @GetMapping("/{username}/workloads/{year}/{month}")
-    public MonthlyHoursResponse getMonthlyHoursByPath(@PathVariable String username,
-                                                      @PathVariable int year,
-                                                      @PathVariable int month) {
+    /** Alternate URI used by the main CRM service. */
+    @GetMapping("/workloads/{username}/months")
+    public MonthlyHoursResponse getMonthlyHoursByQuery(@PathVariable String username,
+                                                       @RequestParam int year,
+                                                       @RequestParam int month) {
         return service.getMonthlyHours(username, year, month);
     }
 

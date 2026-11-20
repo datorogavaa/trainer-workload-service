@@ -78,8 +78,8 @@ public class WorkloadService {
                 return;
             }
 
-            long updated = month.getTrainingSummaryDuration() - duration;
-            if (updated <= 0) {
+            long updated = Math.max(0, month.getTrainingSummaryDuration() - duration);
+            if (updated == 0) {
                 year.getMonths().remove(month);
                 if (year.getMonths().isEmpty()) {
                     workload.getYears().remove(year);
@@ -90,7 +90,6 @@ public class WorkloadService {
             return;
         }
 
-        // ActionType.ADD
         YearSummary year = workload.getYears().stream()
                 .filter(y -> y.getYear() == date.getYear())
                 .findFirst()

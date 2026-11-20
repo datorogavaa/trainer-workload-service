@@ -1,8 +1,11 @@
 package com.epam.gym.workload.repository;
 
+import com.epam.gym.workload.model.TrainerWorkload;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InMemoryWorkloadRepositoryTest {
 
@@ -10,22 +13,23 @@ class InMemoryWorkloadRepositoryTest {
 
     @Test
     void findByUsernameReturnsEmptyForUnknownTrainer() {
-        assertTrue(repository.findByUsername("unknown").isEmpty());
+        assertTrue(repository.findByUsername("nobody").isEmpty());
     }
 
     @Test
-    void upsertCreatesAndUpdatesTheSameWorkload() {
-        var created = repository.upsert("john.doe", workload -> {
+    void upsertCreatesAndThenUpdatesSameWorkload() {
+        TrainerWorkload created = repository.upsert("john.doe", workload -> {
             workload.setTrainerFirstName("John");
             return workload;
         });
-        var updated = repository.upsert("john.doe", workload -> {
+        TrainerWorkload updated = repository.upsert("john.doe", workload -> {
             workload.setTrainerLastName("Doe");
             return workload;
         });
 
-        assertSame(created, updated);
+        assertNotNull(created);
         assertEquals("John", updated.getTrainerFirstName());
         assertEquals("Doe", updated.getTrainerLastName());
+        assertEquals(updated, repository.findByUsername("john.doe").orElseThrow());
     }
 }

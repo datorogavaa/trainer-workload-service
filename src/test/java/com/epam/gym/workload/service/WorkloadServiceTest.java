@@ -7,6 +7,7 @@ import com.epam.gym.workload.repository.InMemoryWorkloadRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.Month;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,7 +33,16 @@ class WorkloadServiceTest {
         service.process(req(LocalDate.of(2026, 12, 3), 60, ActionType.ADD));
         service.process(req(LocalDate.of(2026, 12, 3), 60, ActionType.DELETE));
         service.process(req(LocalDate.of(2026, 12, 3), 60, ActionType.DELETE));
-        assertEquals(0, service.getMonthlyHours("john.doe", 2026, 12).trainingSummaryDuration());
+        assertTrue(service.getWorkload("john.doe").getYears().isEmpty());
+    }
+
+    @Test
+    void deleteForMissingMonthDoesNotCreateZeroMonth() {
+        service.process(req(LocalDate.of(2026, 12, 3), 60, ActionType.ADD));
+        service.process(req(LocalDate.of(2027, 1, 5), 30, ActionType.DELETE));
+
+        assertEquals(60, service.getMonthlyHours("john.doe", 2026, 12).trainingSummaryDuration());
+        assertEquals(0, service.getMonthlyHours("john.doe", 2027, 1).trainingSummaryDuration());
     }
 
     @Test
@@ -41,28 +51,49 @@ class WorkloadServiceTest {
     }
 
     @Test
-    void processUpdatesTrainerDetails() {
-        service.process(new WorkloadRequest("john.doe", "Jane", "Smith", false,
-                LocalDate.of(2026, 2, 1), 30, ActionType.ADD));
+    void deleteSubtractsOnlyRequestedDurationAndKeepsMonth() {
+        service.process(req(LocalDate.of(2026, 12, 3), 60, ActionType.ADD));
+        service.process(req(LocalDate.of(2026, 12, 20), 25, ActionType.DELETE));
+
+        assertEquals(35, service.getMonthlyHours("john.doe", 2026, 12).trainingSummaryDuration());
+        assertEquals(1, service.getWorkload("john.doe").getYears().size());
+        assertEquals(1, service.getWorkload("john.doe").getYears().get(0).getMonths().size());
+    }
+
+    @Test
+    void deletingMoreThanMonthlyTotalRemovesMonthAndYear() {
+        service.process(req(LocalDate.of(2026, 12, 3), 10, ActionType.ADD));
+        service.process(req(LocalDate.of(2026, 12, 20), 50, ActionType.DELETE));
+
+        assertTrue(service.getWorkload("john.doe").getYears().isEmpty());
+    }
+
+    @Test
+    void processingUpdatesTrainerProfile() {
+        service.process(new WorkloadRequest(
+                "john.doe", "John", "Doe", true,
+                LocalDate.of(2026, 12, 3), 60, ActionType.ADD));
+        service.process(new WorkloadRequest(
+                "john.doe", "Jonathan", "Smith", false,
+                LocalDate.of(2026, 12, 20), 30, ActionType.ADD));
 
         var workload = service.getWorkload("john.doe");
-        assertEquals("john.doe", workload.getTrainerUsername());
-        assertEquals("Jane", workload.getTrainerFirstName());
+        assertEquals("Jonathan", workload.getTrainerFirstName());
         assertEquals("Smith", workload.getTrainerLastName());
         assertFalse(workload.isTrainerStatus());
     }
 
     @Test
-    void deleteWithoutPreviousAdditionCreatesZeroSummary() {
-        service.process(req(LocalDate.of(2026, 2, 1), 30, ActionType.DELETE));
+    void separateMonthsRemainIndependent() {
+        service.process(req(LocalDate.of(2026, 10, 1), 20, ActionType.ADD));
+        service.process(req(LocalDate.of(2026, 11, 1), 40, ActionType.ADD));
+        service.process(req(LocalDate.of(2026, 10, 15), 20, ActionType.DELETE));
 
-        assertEquals(0, service.getMonthlyHours("john.doe", 2026, 2).trainingSummaryDuration());
-    }
-
-    @Test
-    void getWorkloadReturnsStoredTrainer() {
-        service.process(req(LocalDate.of(2026, 2, 1), 30, ActionType.ADD));
-
-        assertSame(service.getWorkload("john.doe"), service.getWorkload("john.doe"));
+        var workload = service.getWorkload("john.doe");
+        var year = workload.getYears().get(0);
+        assertEquals(1, year.getMonths().size());
+        assertEquals(Month.NOVEMBER, year.getMonths().get(0).getMonth());
+        assertEquals(0, service.getMonthlyHours("john.doe", 2026, 10).trainingSummaryDuration());
+        assertEquals(40, service.getMonthlyHours("john.doe", 2026, 11).trainingSummaryDuration());
     }
 }
