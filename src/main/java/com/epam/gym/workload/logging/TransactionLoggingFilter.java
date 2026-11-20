@@ -21,7 +21,8 @@ import java.util.UUID;
 /**
  * Transaction-level logging: generates (or accepts) a transactionId, puts it into MDC so every log line
  * of the request carries it, echoes it in the response header, and logs endpoint, request body,
- * response status and response body. Runs before Spring Security so 401/403 are logged too.
+ * response status and response body.
+ * Runs before Spring Security so 401/403 are logged too.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -29,7 +30,7 @@ public class TransactionLoggingFilter extends OncePerRequestFilter {
 
     public static final String TRANSACTION_HEADER = "X-Transaction-Id";
     public static final String MDC_KEY = "transactionId";
-    public static final Logger log = LoggerFactory.getLogger(TransactionLoggingFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(TransactionLoggingFilter.class);
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -58,4 +59,3 @@ public class TransactionLoggingFilter extends OncePerRequestFilter {
         }
     }
 }
-

@@ -31,7 +31,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             jwtService.validateAndGetSubject(header.substring(7)).ifPresent(subject ->
                     SecurityContextHolder.getContext().setAuthentication(
                             new UsernamePasswordAuthenticationToken(subject, null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_SERVICE")))));
+                                    List.of(
+                                            new SimpleGrantedAuthority("ROLE_WORKLOAD_SERVICE"),
+                                            new SimpleGrantedAuthority("ROLE_SERVICE")))));
         }
         chain.doFilter(request, response);
     }

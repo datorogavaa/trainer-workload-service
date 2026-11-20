@@ -59,25 +59,56 @@ public class WorkloadService {
     }
 
     private void apply(TrainerWorkload workload, LocalDate date, int duration, ActionType action) {
+        Month monthKey = date.getMonth();
+
+        if (action == ActionType.DELETE) {
+            YearSummary year = workload.getYears().stream()
+                    .filter(y -> y.getYear() == date.getYear())
+                    .findFirst()
+                    .orElse(null);
+            if (year == null) {
+                return;
+            }
+
+            MonthSummary month = year.getMonths().stream()
+                    .filter(m -> m.getMonth() == monthKey)
+                    .findFirst()
+                    .orElse(null);
+            if (month == null) {
+                return;
+            }
+
+            long updated = month.getTrainingSummaryDuration() - duration;
+            if (updated <= 0) {
+                year.getMonths().remove(month);
+                if (year.getMonths().isEmpty()) {
+                    workload.getYears().remove(year);
+                }
+            } else {
+                month.setTrainingSummaryDuration(updated);
+            }
+            return;
+        }
+
+        // ActionType.ADD
         YearSummary year = workload.getYears().stream()
-                .filter(y -> y.getYear() == date.getYear()).findFirst()
+                .filter(y -> y.getYear() == date.getYear())
+                .findFirst()
                 .orElseGet(() -> {
                     YearSummary y = new YearSummary(date.getYear());
                     workload.getYears().add(y);
                     return y;
                 });
-        Month monthKey = date.getMonth();
+
         MonthSummary month = year.getMonths().stream()
-                .filter(m -> m.getMonth() == monthKey).findFirst()
+                .filter(m -> m.getMonth() == monthKey)
+                .findFirst()
                 .orElseGet(() -> {
                     MonthSummary m = new MonthSummary(monthKey, 0);
                     year.getMonths().add(m);
                     return m;
                 });
 
-        long updated = action == ActionType.ADD
-                ? month.getTrainingSummaryDuration() + duration
-                : Math.max(0, month.getTrainingSummaryDuration() - duration);
-        month.setTrainingSummaryDuration(updated);
+        month.setTrainingSummaryDuration(month.getTrainingSummaryDuration() + duration);
     }
 }

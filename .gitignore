@@ -1,0 +1,9 @@
+target/
+.idea/workspace.xml
+*.mv.db
+*.trace.db
+*.lock.db
+*.log
+logs/
+.env
+!.env.example

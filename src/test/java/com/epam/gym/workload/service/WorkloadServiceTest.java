@@ -39,4 +39,30 @@ class WorkloadServiceTest {
     void unknownTrainerIsNotFound() {
         assertThrows(NotFoundException.class, () -> service.getMonthlyHours("nobody", 2026, 1));
     }
+
+    @Test
+    void processUpdatesTrainerDetails() {
+        service.process(new WorkloadRequest("john.doe", "Jane", "Smith", false,
+                LocalDate.of(2026, 2, 1), 30, ActionType.ADD));
+
+        var workload = service.getWorkload("john.doe");
+        assertEquals("john.doe", workload.getTrainerUsername());
+        assertEquals("Jane", workload.getTrainerFirstName());
+        assertEquals("Smith", workload.getTrainerLastName());
+        assertFalse(workload.isTrainerStatus());
+    }
+
+    @Test
+    void deleteWithoutPreviousAdditionCreatesZeroSummary() {
+        service.process(req(LocalDate.of(2026, 2, 1), 30, ActionType.DELETE));
+
+        assertEquals(0, service.getMonthlyHours("john.doe", 2026, 2).trainingSummaryDuration());
+    }
+
+    @Test
+    void getWorkloadReturnsStoredTrainer() {
+        service.process(req(LocalDate.of(2026, 2, 1), 30, ActionType.ADD));
+
+        assertSame(service.getWorkload("john.doe"), service.getWorkload("john.doe"));
+    }
 }
