@@ -1,9 +1,19 @@
 package com.epam.gym.workload.model;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Document
+@CompoundIndex(name = "trainer_name_index", def = "{'trainerFirstName' : 1, 'trainerLastName' : 1}")
 public class TrainerWorkload {
+
+    @Id
+    private Integer id;
+
     private String trainerUsername;
     private String trainerFirstName;
     private String trainerLastName;

@@ -7,7 +7,7 @@ import com.epam.gym.workload.exception.NotFoundException;
 import com.epam.gym.workload.model.MonthSummary;
 import com.epam.gym.workload.model.TrainerWorkload;
 import com.epam.gym.workload.model.YearSummary;
-import com.epam.gym.workload.repository.WorkloadRepository;
+import com.epam.gym.workload.repository.TrainerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,9 +20,9 @@ public class WorkloadService {
 
     private static final Logger log = LoggerFactory.getLogger(WorkloadService.class);
 
-    private final WorkloadRepository repository;
+    private final TrainerRepository repository;
 
-    public WorkloadService(WorkloadRepository repository) {
+    public WorkloadService(TrainerRepository repository) {
         this.repository = repository;
     }
 
@@ -30,13 +30,13 @@ public class WorkloadService {
         log.info("[operation] updateWorkload trainer={} action={} date={} duration={}",
                 request.trainerUsername(), request.actionType(), request.trainingDate(), request.trainingDuration());
 
-        repository.upsert(request.trainerUsername(), workload -> {
-            workload.setTrainerFirstName(request.trainerFirstName());
-            workload.setTrainerLastName(request.trainerLastName());
-            workload.setTrainerStatus(request.isActive());
+        TrainerWorkload workload = repository.findByTrainerUsername(request.trainerUsername());
+        if (workload == null) {
+            throw new NotFoundException("No workload found for trainer " + request.trainerUsername());
+        }else {
             apply(workload, request.trainingDate(), request.trainingDuration(), request.actionType());
-            return workload;
-        });
+            repository.save(workload);
+        }
 
         log.info("[operation] updateWorkload completed for trainer={}", request.trainerUsername());
     }
@@ -54,8 +54,7 @@ public class WorkloadService {
     }
 
     public TrainerWorkload getWorkload(String username) {
-        return repository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("No workload found for trainer " + username));
+        return repository.findByTrainerUsername(username);
     }
 
     private void apply(TrainerWorkload workload, LocalDate date, int duration, ActionType action) {
