@@ -28,15 +28,26 @@ public class WorkloadService {
 
     public void process(WorkloadRequest request) {
         log.info("[operation] updateWorkload trainer={} action={} date={} duration={}",
-                request.trainerUsername(), request.actionType(), request.trainingDate(), request.trainingDuration());
+                request.trainerUsername(), request.actionType(),
+                request.trainingDate(), request.trainingDuration());
 
         TrainerWorkload workload = repository.findByTrainerUsername(request.trainerUsername());
+
         if (workload == null) {
-            throw new NotFoundException("No workload found for trainer " + request.trainerUsername());
-        }else {
-            apply(workload, request.trainingDate(), request.trainingDuration(), request.actionType());
-            repository.save(workload);
+            if (request.actionType() == ActionType.DELETE) {
+                log.warn("[operation] DELETE ignored, no workload for trainer={}", request.trainerUsername());
+                return;                                   // წასაშლელი არაფერია
+            }
+            log.debug("[operation] trainer={} not found, creating new document", request.trainerUsername());
+            workload = new TrainerWorkload();
+            workload.setTrainerUsername(request.trainerUsername());
+            workload.setTrainerFirstName(request.trainerFirstName());
+            workload.setTrainerLastName(request.trainerLastName());
+            workload.setTrainerStatus(request.isActive());
         }
+
+        apply(workload, request.trainingDate(), request.trainingDuration(), request.actionType());
+        repository.save(workload);
 
         log.info("[operation] updateWorkload completed for trainer={}", request.trainerUsername());
     }

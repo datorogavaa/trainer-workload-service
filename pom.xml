@@ -16,10 +16,9 @@
   <version>1.0.0</version>
 
   <properties>
-    <java.version>17</java.version>
+    <java.version>21</java.version>
     <spring-cloud.version>2023.0.1</spring-cloud.version>
     <jjwt.version>0.12.5</jjwt.version>
-    <byte-buddy.version>1.17.8</byte-buddy.version>
     <!-- Default so surefire works even when the JaCoCo agent is not run -->
     <jacocoArgLine></jacocoArgLine>
   </properties>
@@ -32,6 +31,10 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-activemq</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-mongodb</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -68,6 +71,13 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- Only needed if your code uses Lombok annotations; otherwise delete this block -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -77,10 +87,6 @@
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-mongodb</artifactId>
     </dependency>
   </dependencies>
 
@@ -101,6 +107,14 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </exclude>
+          </excludes>
+        </configuration>
       </plugin>
 
       <plugin>
@@ -131,7 +145,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>${jacocoArgLine} -Dnet.bytebuddy.experimental=true</argLine>
+          <argLine>${jacocoArgLine}</argLine>
         </configuration>
       </plugin>
     </plugins>
